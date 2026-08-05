@@ -82,6 +82,7 @@ class BeerInfo(TypedDict):
     brewery: str
     style: str
     abv: float
+    priority: int
 
 
 class BeerSearchResponse(TypedDict):

@@ -4,10 +4,11 @@ from unittest import mock
 
 import pytest
 from mcp import Client
+from mcp.server.auth.provider import AccessToken
 from mcp.types import TextContent
 from pytest_mock import MockerFixture
 
-from untappd_mcp.server import mcp, parse_result
+from untappd_mcp.server import SimpleTokenVerifier, mcp, parse_result
 from untappd_mcp.types import (
     BeerSearchResponse,
     UntappdBeerInfo,
@@ -99,6 +100,7 @@ async def test_call_search_for_beer_tool(client: Client, mocker: MockerFixture) 
                 "brewery": "Suarez Family Brewery",
                 "style": "Pilsner - German",
                 "abv": 4.9,
+                "priority": 1,
             }
         ],
         "summary": "Found 1 beer matching 'suarez palatine'",
@@ -110,6 +112,43 @@ async def test_call_search_for_beer_tool(client: Client, mocker: MockerFixture) 
             "q": "suarez palatine",
             "client_id": "some-client-id",
             "client_secret": "some-client-secret",
+            "limit": 50,
+        },
+    )
+
+
+@pytest.mark.anyio
+async def test_call_search_for_beer_tool_using_access_token(
+    client: Client, mocker: MockerFixture
+) -> None:
+    ok_response = mock.MagicMock()
+    ok_response.status_code = 200
+    ok_response.json.return_value = {"response": SAMPLE_BEER_RESPONSE}
+    mock_requests = mocker.patch(BASE_PATH + "requests.get", return_value=ok_response)
+    mocker.patch(
+        BASE_PATH + "os.environ",
+        {"ACCESS_TOKEN": "some-access-token"},
+    )
+    result = await client.call_tool("search_for_beer", {"name": "suarez palatine"})
+    expected_response: BeerSearchResponse = {
+        "found": 1,
+        "matches": [
+            {
+                "name": "Palatine Pils",
+                "brewery": "Suarez Family Brewery",
+                "style": "Pilsner - German",
+                "abv": 4.9,
+                "priority": 1,
+            }
+        ],
+        "summary": "Found 1 beer matching 'suarez palatine'",
+    }
+    assert json.loads(cast(TextContent, result.content[0]).text) == expected_response
+    mock_requests.assert_called_once_with(
+        "https://api.untappd.com/v4/search/beer",
+        {
+            "q": "suarez palatine",
+            "access_token": "some-access-token",
             "limit": 50,
         },
     )
@@ -139,6 +178,7 @@ async def test_call_search_for_beer_tool_with_offset_parameter(
                 "brewery": "Suarez Family Brewery",
                 "style": "Pilsner - German",
                 "abv": 4.9,
+                "priority": 1,
             }
         ],
         "summary": "Found 1 beer matching 'suarez palatine'",
@@ -198,11 +238,12 @@ def test_parse_result_with_no_results():
             "homebrew": {"count": 0, "items": []},
         }
     )
-    assert result == {
+    expected: BeerSearchResponse = {
         "found": 0,
         "matches": [],
         "summary": "Found no results for 'suarez palatine'",
     }
+    assert result == expected
 
 
 def test_parse_result_with_only_homebrew():
@@ -218,7 +259,7 @@ def test_parse_result_with_only_homebrew():
             "homebrew": {"count": 1, "items": [SAMPLE_BEER_SEARCH_RESULT]},
         }
     )
-    assert result == {
+    expected: BeerSearchResponse = {
         "found": 1,
         "matches": [
             {
@@ -226,10 +267,12 @@ def test_parse_result_with_only_homebrew():
                 "brewery": "Suarez Family Brewery (Homebrew)",
                 "style": "Pilsner - German",
                 "abv": 4.9,
+                "priority": 1,
             }
         ],
         "summary": "Found 1 homebrew matching 'suarez palatine'",
     }
+    assert result == expected
 
 
 def test_parse_result_with_commercial_beers_and_homebrews():
@@ -251,7 +294,7 @@ def test_parse_result_with_commercial_beers_and_homebrews():
             },
         }
     )
-    assert result == {
+    expected: BeerSearchResponse = {
         "found": 4,
         "matches": [
             {
@@ -259,25 +302,38 @@ def test_parse_result_with_commercial_beers_and_homebrews():
                 "brewery": "Suarez Family Brewery",
                 "style": "Pilsner - German",
                 "abv": 4.9,
+                "priority": 1,
             },
             {
                 "name": "Palatine Pils",
                 "brewery": "Suarez Family Brewery",
                 "style": "Pilsner - German",
                 "abv": 4.9,
+                "priority": 2,
             },
             {
                 "name": "Palatine Pils",
                 "brewery": "Suarez Family Brewery (Homebrew)",
                 "style": "Pilsner - German",
                 "abv": 4.9,
+                "priority": 3,
             },
             {
                 "name": "Palatine Pils",
                 "brewery": "Suarez Family Brewery (Homebrew)",
                 "style": "Pilsner - German",
                 "abv": 4.9,
+                "priority": 4,
             },
         ],
         "summary": "Found 2 commercial beers and 2 homebrews matching 'suarez palatine'",
     }
+    assert result == expected
+
+
+@pytest.mark.anyio
+async def test_SimpleTokenVerifier():
+    result = await SimpleTokenVerifier().verify_token("SOME_TOKEN")
+    assert result == AccessToken(
+        token="SOME_TOKEN", client_id="SOME_TOKEN", scopes=["api"]
+    )
