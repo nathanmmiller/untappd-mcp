@@ -30,17 +30,20 @@ class UntappdBreweryLocation(TypedDict):
     lng: float
 
 
-class UntappdBreweryInfo(TypedDict):
+class UntappdBreweryBaseInfo(TypedDict):
     brewery_id: int
     brewery_name: str
-    brewery_type: str
     brewery_slug: str
     brewery_page_url: str
     brewery_label: str
-    brewery_stamp: str
     country_name: str
-    contact: UntappdBreweryContact
     location: UntappdBreweryLocation
+
+
+class UntappdBreweryInfoForBeerSearch(UntappdBreweryBaseInfo):
+    brewery_type: str
+    brewery_stamp: str
+    contact: UntappdBreweryContact
     brewery_active: Literal[0, 1]
 
 
@@ -49,7 +52,7 @@ class UntappdBeerSearchResult(TypedDict):
     have_had: bool
     your_count: int
     beer: UntappdBeerInfo
-    brewery: UntappdBreweryInfo
+    brewery: UntappdBreweryInfoForBeerSearch
 
 
 class UntappdBeerSearchResults(TypedDict):
@@ -57,9 +60,17 @@ class UntappdBeerSearchResults(TypedDict):
     items: list[UntappdBeerSearchResult]
 
 
+class UntappdBreweryInfoForBrewerySearch(UntappdBreweryBaseInfo):
+    beer_count: int
+
+
+class UntappdBrewerySearchResult(TypedDict):
+    brewery: UntappdBreweryInfoForBrewerySearch
+
+
 class UntappdBrewerySearchResults(TypedDict):
     count: int
-    items: list[UntappdBreweryInfo]
+    items: list[UntappdBrewerySearchResult]
 
 
 class UntappdBeerSearchResponse(TypedDict):
@@ -77,6 +88,16 @@ class UntappdBeerSearchResponsePayload(TypedDict):
     response: UntappdBeerSearchResponse
 
 
+class UntappdBrewerySearchResponse(TypedDict):
+    found: int
+    term: str
+    brewery: UntappdBrewerySearchResults
+
+
+class UntappdBrewerySearchResponsePayload(TypedDict):
+    response: UntappdBrewerySearchResponse
+
+
 class BeerInfo(TypedDict):
     name: str
     brewery: str
@@ -88,6 +109,19 @@ class BeerInfo(TypedDict):
 class BeerSearchResponse(TypedDict):
     found: int
     matches: list[BeerInfo]
+    summary: str
+
+
+class BreweryInfo(TypedDict):
+    name: str
+    beer_count: int
+    country_name: str
+    priority: int
+
+
+class BrewerySearchResponse(TypedDict):
+    found: int
+    matches: list[BreweryInfo]
     summary: str
 
 

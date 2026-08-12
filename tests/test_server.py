@@ -8,56 +8,16 @@ from mcp.server.auth.provider import AccessToken
 from mcp.types import TextContent
 from pytest_mock import MockerFixture
 
-from untappd_mcp.server import SimpleTokenVerifier, mcp, parse_result
+from tests.test_constants import SAMPLE_BEER_SEARCH_RESULT, SAMPLE_BREWERY_SEARCH_RESULT
+from untappd_mcp.server import SimpleTokenVerifier, mcp
 from untappd_mcp.types import (
     BeerSearchResponse,
-    UntappdBeerInfo,
+    BrewerySearchResponse,
     UntappdBeerSearchResponse,
-    UntappdBeerSearchResult,
-    UntappdBreweryInfo,
+    UntappdBrewerySearchResponse,
 )
 
 BASE_PATH = "src.untappd_mcp.server."
-
-SAMPLE_BEER: UntappdBeerInfo = {
-    "bid": 92087,
-    "beer_name": "Palatine Pils",
-    "beer_label": "palatine.jpg",
-    "beer_abv": 4.9,
-    "beer_slug": "suarez-family-brewery-palatine-pils",
-    "beer_ibu": 0,
-    "beer_description": "Just a perfect pilsner.",
-    "created_at": "Sun, 20 Sep 1987 17:38:11 -0600",
-    "beer_style": "Pilsner - German",
-    "in_production": 1,
-    "auth_rating": 0,
-    "wish_list": False,
-}
-SAMPLE_BREWERY: UntappdBreweryInfo = {
-    "brewery_id": 61690,
-    "brewery_name": "Suarez Family Brewery",
-    "brewery_slug": "suarez-family-brewery",
-    "brewery_page_url": "/SuarezFamilyBrewery",
-    "brewery_type": "Micro Brewery",
-    "brewery_label": "suarez.jpg",
-    "brewery_stamp": "suarez.jpg",
-    "country_name": "United States",
-    "contact": {"twitter": "", "facebook": "", "instagram": "", "url": ""},
-    "location": {
-        "brewery_city": "Hudson",
-        "brewery_state": "NY",
-        "lat": 42.1109009,
-        "lng": -73.8123016,
-    },
-    "brewery_active": 1,
-}
-SAMPLE_BEER_SEARCH_RESULT: UntappdBeerSearchResult = {
-    "checkin_count": 92087,
-    "have_had": False,
-    "your_count": 0,
-    "beer": SAMPLE_BEER,
-    "brewery": SAMPLE_BREWERY,
-}
 SAMPLE_BEER_RESPONSE: UntappdBeerSearchResponse = {
     "found": 1,
     "offset": 0,
@@ -67,6 +27,11 @@ SAMPLE_BEER_RESPONSE: UntappdBeerSearchResponse = {
     "beers": {"count": 1, "items": [SAMPLE_BEER_SEARCH_RESULT]},
     "homebrew": {"count": 0, "items": []},
     "breweries": {"count": 0, "items": []},
+}
+SAMPLE_BREWERY_RESPONSE: UntappdBrewerySearchResponse = {
+    "found": 1,
+    "term": "suarez",
+    "brewery": {"count": 1, "items": [SAMPLE_BREWERY_SEARCH_RESULT]},
 }
 
 
@@ -82,7 +47,7 @@ async def client():
 
 
 @pytest.mark.anyio
-async def test_call_search_for_beer_tool(client: Client, mocker: MockerFixture) -> None:
+async def test_call_beer_search_tool(client: Client, mocker: MockerFixture) -> None:
     ok_response = mock.MagicMock()
     ok_response.status_code = 200
     ok_response.json.return_value = {"response": SAMPLE_BEER_RESPONSE}
@@ -91,7 +56,7 @@ async def test_call_search_for_beer_tool(client: Client, mocker: MockerFixture) 
         BASE_PATH + "os.environ",
         {"CLIENT_ID": "some-client-id", "CLIENT_SECRET": "some-client-secret"},
     )
-    result = await client.call_tool("search_for_beer", {"name": "suarez palatine"})
+    result = await client.call_tool("beer_search", {"name": "suarez palatine"})
     expected_response: BeerSearchResponse = {
         "found": 1,
         "matches": [
@@ -118,7 +83,7 @@ async def test_call_search_for_beer_tool(client: Client, mocker: MockerFixture) 
 
 
 @pytest.mark.anyio
-async def test_call_search_for_beer_tool_using_access_token(
+async def test_call_beer_search_tool_using_access_token(
     client: Client, mocker: MockerFixture
 ) -> None:
     ok_response = mock.MagicMock()
@@ -129,7 +94,7 @@ async def test_call_search_for_beer_tool_using_access_token(
         BASE_PATH + "os.environ",
         {"ACCESS_TOKEN": "some-access-token"},
     )
-    result = await client.call_tool("search_for_beer", {"name": "suarez palatine"})
+    result = await client.call_tool("beer_search", {"name": "suarez palatine"})
     expected_response: BeerSearchResponse = {
         "found": 1,
         "matches": [
@@ -155,7 +120,7 @@ async def test_call_search_for_beer_tool_using_access_token(
 
 
 @pytest.mark.anyio
-async def test_call_search_for_beer_tool_with_offset_parameter(
+async def test_call_beer_search_tool_with_offset_parameter(
     client: Client, mocker: MockerFixture
 ) -> None:
     ok_response = mock.MagicMock()
@@ -167,7 +132,7 @@ async def test_call_search_for_beer_tool_with_offset_parameter(
         {"CLIENT_ID": "some-client-id", "CLIENT_SECRET": "some-client-secret"},
     )
     result = await client.call_tool(
-        "search_for_beer",
+        "beer_search",
         {"name": "suarez palatine", "offset": 1},
     )
     expected_response: BeerSearchResponse = {
@@ -197,7 +162,7 @@ async def test_call_search_for_beer_tool_with_offset_parameter(
 
 
 @pytest.mark.anyio
-async def test_call_search_for_beer_tool_with_errors(
+async def test_call_beer_search_tool_with_errors(
     client: Client, mocker: MockerFixture
 ) -> None:
     error_response = mock.MagicMock()
@@ -209,7 +174,7 @@ async def test_call_search_for_beer_tool_with_errors(
         {"CLIENT_ID": "some-client-id", "CLIENT_SECRET": "some-client-secret"},
     )
     result = await client.call_tool(
-        "search_for_beer",
+        "beer_search",
         {"name": "suarez palatine"},
     )
     assert json.loads(cast(TextContent, result.content[0]).text) == {
@@ -217,7 +182,7 @@ async def test_call_search_for_beer_tool_with_errors(
     }
     error_response.json.return_value = {"meta": {"error_detail": "uh oh!"}}
     result = await client.call_tool(
-        "search_for_beer",
+        "beer_search",
         {"name": "suarez palatine"},
     )
     assert json.loads(cast(TextContent, result.content[0]).text) == {
@@ -225,110 +190,145 @@ async def test_call_search_for_beer_tool_with_errors(
     }
 
 
-def test_parse_result_with_no_results():
-    result = parse_result(
-        {
-            "found": 0,
-            "limit": 50,
-            "offset": 0,
-            "term": "suarez palatine",
-            "parsed_term": "suarez palatine",
-            "beers": {"count": 0, "items": []},
-            "breweries": {"count": 0, "items": []},
-            "homebrew": {"count": 0, "items": []},
-        }
+@pytest.mark.anyio
+async def test_call_brewery_search_tool(client: Client, mocker: MockerFixture) -> None:
+    ok_response = mock.MagicMock()
+    ok_response.status_code = 200
+    ok_response.json.return_value = {"response": SAMPLE_BREWERY_RESPONSE}
+    mock_requests = mocker.patch(BASE_PATH + "requests.get", return_value=ok_response)
+    mocker.patch(
+        BASE_PATH + "os.environ",
+        {"CLIENT_ID": "some-client-id", "CLIENT_SECRET": "some-client-secret"},
     )
-    expected: BeerSearchResponse = {
-        "found": 0,
-        "matches": [],
-        "summary": "Found no results for 'suarez palatine'",
-    }
-    assert result == expected
-
-
-def test_parse_result_with_only_homebrew():
-    result = parse_result(
-        {
-            "found": 1,
-            "limit": 50,
-            "offset": 0,
-            "term": "suarez palatine",
-            "parsed_term": "bogus beer",
-            "beers": {"count": 0, "items": []},
-            "breweries": {"count": 0, "items": []},
-            "homebrew": {"count": 1, "items": [SAMPLE_BEER_SEARCH_RESULT]},
-        }
-    )
-    expected: BeerSearchResponse = {
+    result = await client.call_tool("brewery_search", {"name": "suarez"})
+    expected_response: BrewerySearchResponse = {
         "found": 1,
         "matches": [
             {
-                "name": "Palatine Pils",
-                "brewery": "Suarez Family Brewery (Homebrew)",
-                "style": "Pilsner - German",
-                "abv": 4.9,
+                "name": "Suarez Family Brewery",
+                "beer_count": 920,
+                "country_name": "United States",
                 "priority": 1,
             }
         ],
-        "summary": "Found 1 homebrew matching 'suarez palatine'",
+        "summary": "Found 1 brewery matching 'suarez'",
     }
-    assert result == expected
-
-
-def test_parse_result_with_commercial_beers_and_homebrews():
-    result = parse_result(
+    assert json.loads(cast(TextContent, result.content[0]).text) == expected_response
+    mock_requests.assert_called_once_with(
+        "https://api.untappd.com/v4/search/brewery",
         {
-            "found": 4,
+            "q": "suarez",
+            "client_id": "some-client-id",
+            "client_secret": "some-client-secret",
             "limit": 50,
-            "offset": 0,
-            "term": "suarez palatine",
-            "parsed_term": "bogus beer",
-            "beers": {
-                "count": 2,
-                "items": [SAMPLE_BEER_SEARCH_RESULT, SAMPLE_BEER_SEARCH_RESULT],
-            },
-            "breweries": {"count": 0, "items": []},
-            "homebrew": {
-                "count": 2,
-                "items": [SAMPLE_BEER_SEARCH_RESULT, SAMPLE_BEER_SEARCH_RESULT],
-            },
-        }
+        },
     )
-    expected: BeerSearchResponse = {
-        "found": 4,
+
+
+@pytest.mark.anyio
+async def test_call_brewery_search_tool_using_access_token(
+    client: Client, mocker: MockerFixture
+) -> None:
+    ok_response = mock.MagicMock()
+    ok_response.status_code = 200
+    ok_response.json.return_value = {"response": SAMPLE_BREWERY_RESPONSE}
+    mock_requests = mocker.patch(BASE_PATH + "requests.get", return_value=ok_response)
+    mocker.patch(
+        BASE_PATH + "os.environ",
+        {"ACCESS_TOKEN": "some-access-token"},
+    )
+    result = await client.call_tool("brewery_search", {"name": "suarez"})
+    expected_response: BrewerySearchResponse = {
+        "found": 1,
         "matches": [
             {
-                "name": "Palatine Pils",
-                "brewery": "Suarez Family Brewery",
-                "style": "Pilsner - German",
-                "abv": 4.9,
+                "name": "Suarez Family Brewery",
+                "beer_count": 920,
+                "country_name": "United States",
                 "priority": 1,
-            },
-            {
-                "name": "Palatine Pils",
-                "brewery": "Suarez Family Brewery",
-                "style": "Pilsner - German",
-                "abv": 4.9,
-                "priority": 2,
-            },
-            {
-                "name": "Palatine Pils",
-                "brewery": "Suarez Family Brewery (Homebrew)",
-                "style": "Pilsner - German",
-                "abv": 4.9,
-                "priority": 3,
-            },
-            {
-                "name": "Palatine Pils",
-                "brewery": "Suarez Family Brewery (Homebrew)",
-                "style": "Pilsner - German",
-                "abv": 4.9,
-                "priority": 4,
-            },
+            }
         ],
-        "summary": "Found 2 commercial beers and 2 homebrews matching 'suarez palatine'",
+        "summary": "Found 1 brewery matching 'suarez'",
     }
-    assert result == expected
+    assert json.loads(cast(TextContent, result.content[0]).text) == expected_response
+    mock_requests.assert_called_once_with(
+        "https://api.untappd.com/v4/search/brewery",
+        {
+            "q": "suarez",
+            "access_token": "some-access-token",
+            "limit": 50,
+        },
+    )
+
+
+@pytest.mark.anyio
+async def test_call_brewery_search_tool_with_offset_parameter(
+    client: Client, mocker: MockerFixture
+) -> None:
+    ok_response = mock.MagicMock()
+    ok_response.status_code = 200
+    ok_response.json.return_value = {"response": SAMPLE_BREWERY_RESPONSE}
+    mock_requests = mocker.patch(BASE_PATH + "requests.get", return_value=ok_response)
+    mocker.patch(
+        BASE_PATH + "os.environ",
+        {"CLIENT_ID": "some-client-id", "CLIENT_SECRET": "some-client-secret"},
+    )
+    result = await client.call_tool(
+        "brewery_search",
+        {"name": "suarez", "offset": 1},
+    )
+    expected_response: BrewerySearchResponse = {
+        "found": 1,
+        "matches": [
+            {
+                "name": "Suarez Family Brewery",
+                "beer_count": 920,
+                "country_name": "United States",
+                "priority": 1,
+            }
+        ],
+        "summary": "Found 1 brewery matching 'suarez'",
+    }
+    assert json.loads(cast(TextContent, result.content[0]).text) == expected_response
+    mock_requests.assert_called_once_with(
+        "https://api.untappd.com/v4/search/brewery",
+        {
+            "q": "suarez",
+            "client_id": "some-client-id",
+            "client_secret": "some-client-secret",
+            "limit": 50,
+            "offset": 1,
+        },
+    )
+
+
+@pytest.mark.anyio
+async def test_call_brewery_search_tool_with_errors(
+    client: Client, mocker: MockerFixture
+) -> None:
+    error_response = mock.MagicMock()
+    error_response.status_code = 500
+    error_response.json.return_value = {}
+    mocker.patch(BASE_PATH + "requests.get", return_value=error_response)
+    mocker.patch(
+        BASE_PATH + "os.environ",
+        {"CLIENT_ID": "some-client-id", "CLIENT_SECRET": "some-client-secret"},
+    )
+    result = await client.call_tool(
+        "brewery_search",
+        {"name": "suarez"},
+    )
+    assert json.loads(cast(TextContent, result.content[0]).text) == {
+        "error": "Search Errored: 500"
+    }
+    error_response.json.return_value = {"meta": {"error_detail": "uh oh!"}}
+    result = await client.call_tool(
+        "brewery_search",
+        {"name": "suarez"},
+    )
+    assert json.loads(cast(TextContent, result.content[0]).text) == {
+        "error": "Search Errored: uh oh!"
+    }
 
 
 @pytest.mark.anyio
