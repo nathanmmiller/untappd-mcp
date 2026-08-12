@@ -41,7 +41,8 @@ This is built on the MCP Python SDK and it is recommended you follow the instruc
 
 Currently the Untappd MCP supports the following tools:
 
-- Beer Search (search_for_beer) - searches for beers with the requested `name` parameter. Optionally you can provide a `limit` (default is 25), an `offset` (for "search more" functionality), and a `sort` ("name" - sorts by name instead of by checkin count).
+- Beer Search (beer_search) - searches for beers with the requested `name` parameter. Optionally you can provide an `offset` (for "search more" functionality).
+- Brewery Search (brewery_search) - searches for breweries with the requested `name` parameter. Optionally you can provide an `offset` (for "search more" functionality).
 
 ## Affiliation
 
