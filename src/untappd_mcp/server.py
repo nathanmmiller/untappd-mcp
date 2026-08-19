@@ -1,6 +1,6 @@
 import os
 
-import requests
+import httpx2
 from dotenv import load_dotenv
 from mcp.server import MCPServer
 from mcp.server.auth.middleware.auth_context import get_access_token
@@ -61,7 +61,7 @@ def _prepare_authentication_optional_search_parameters(
 
 
 @mcp.tool()
-def beer_search(
+async def beer_search(
     name: str,
     offset: int | None = None,
 ) -> BeerSearchResponse | ErrorResponse:
@@ -71,7 +71,8 @@ def beer_search(
     Results will be tagged with a "priority" - lower number = higher priority. When searching for a beer, always consider a lower 'priority' number to be a more relevant search result.
     """
     parameters = _prepare_authentication_optional_search_parameters(name, offset)
-    response = requests.get(UNTAPPD_BASE_URL + "search/beer", parameters)
+    async with httpx2.AsyncClient() as client:
+        response = await client.get(UNTAPPD_BASE_URL + "search/beer", params=parameters)
     if response.status_code >= 400:
         try:
             error = response.json()["meta"]["error_detail"]
@@ -84,7 +85,7 @@ def beer_search(
 
 
 @mcp.tool()
-def brewery_search(
+async def brewery_search(
     name: str, offset: int | None = None
 ) -> BrewerySearchResponse | ErrorResponse:
     """
@@ -93,7 +94,10 @@ def brewery_search(
     Results will be tagged with a "priority" - lower number = higher priority. When searching for a brewery, always consider a lower 'priority' number to be a more relevant search result.
     """
     parameters = _prepare_authentication_optional_search_parameters(name, offset)
-    response = requests.get(UNTAPPD_BASE_URL + "search/brewery", parameters)
+    async with httpx2.AsyncClient() as client:
+        response = await client.get(
+            UNTAPPD_BASE_URL + "search/brewery", params=parameters
+        )
     if response.status_code >= 400:
         try:
             error = response.json()["meta"]["error_detail"]

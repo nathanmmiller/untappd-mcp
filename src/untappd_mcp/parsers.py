@@ -35,19 +35,22 @@ def parse_beer_search_result(result: UntappdBeerSearchResponse) -> BeerSearchRes
         _parse_beer(beer, priority + len(beer_info), True)
         for priority, beer in enumerate(homebrews["items"])
     ]
+    summary_tail = (
+        f", out of {found} total results" if found > len(beers) + len(homebrews) else ""
+    )
 
     if beer_info and homebrew_info:
         beer_count = beers["count"]
         homebrew_count = homebrews["count"]
         beer_plural = "s" if beer_count > 1 else ""
         homebrew_plural = "s" if homebrew_count > 1 else ""
-        summary = f"Found {beer_count} commercial beer{beer_plural} and {homebrew_count} homebrew{homebrew_plural} matching '{term}'"
+        summary = f"Found {beer_count} commercial beer{beer_plural} and {homebrew_count} homebrew{homebrew_plural} matching '{term}'{summary_tail}"
     elif beer_info:
         plural = "s" if found > 1 else ""
-        summary = f"Found {found} beer{plural} matching '{term}'"
+        summary = f"Found {found} beer{plural} matching '{term}'{summary_tail}"
     elif homebrew_info:
         plural = "s" if found > 1 else ""
-        summary = f"Found {found} homebrew{plural} matching '{term}'"
+        summary = f"Found {found} homebrew{plural} matching '{term}'{summary_tail}"
     else:
         summary = f"Found no results for '{term}'"
 
