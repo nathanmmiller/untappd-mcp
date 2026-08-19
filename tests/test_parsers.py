@@ -56,7 +56,7 @@ def test_parse_beer_search_result_with_only_homebrew():
 def test_parse_beer_search_result_with_commercial_beers_and_homebrews():
     result = parse_beer_search_result(
         {
-            "found": 4,
+            "found": 5,
             "limit": 50,
             "offset": 0,
             "term": "suarez palatine",
@@ -73,7 +73,7 @@ def test_parse_beer_search_result_with_commercial_beers_and_homebrews():
         }
     )
     expected: BeerSearchResponse = {
-        "found": 4,
+        "found": 5,
         "matches": [
             {
                 "name": "Palatine Pils",
@@ -104,7 +104,7 @@ def test_parse_beer_search_result_with_commercial_beers_and_homebrews():
                 "priority": 4,
             },
         ],
-        "summary": "Found 2 commercial beers and 2 homebrews matching 'suarez palatine'",
+        "summary": "Found 2 commercial beers and 2 homebrews matching 'suarez palatine', out of 5 total results",
     }
     assert result == expected
 
